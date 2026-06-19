@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Health Metrics Dashboard</title>
+  <title>Patient Vital Signs Monitor</title>
   <!-- Font Awesome Icons (free) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <style>
@@ -16,7 +16,7 @@
 
     body {
       min-height: 100vh;
-      background: linear-gradient(145deg, #f6f9fc 0%, #e9f2f9 100%);
+      background: linear-gradient(145deg, #f0f7fc 0%, #dce8f0 100%);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -24,27 +24,49 @@
     }
 
     .dashboard {
-      max-width: 850px;
+      max-width: 950px;
       width: 100%;
-      background: rgba(255, 255, 255, 0.75);
+      background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       border-radius: 48px;
-      padding: 2rem 2rem 2.5rem;
+      padding: 2rem 2rem 2rem;
       box-shadow: 0 20px 40px rgba(0, 20, 40, 0.15), 0 6px 12px rgba(0, 0, 0, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.5);
       transition: all 0.2s ease;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 0.25rem;
     }
 
     h1 {
       display: flex;
       align-items: center;
       gap: 12px;
-      font-weight: 600;
+      font-weight: 700;
       font-size: 1.9rem;
       color: #0b2b3f;
       letter-spacing: -0.5px;
-      margin-bottom: 0.25rem;
+    }
+
+    h1 i {
+      color: #c0395a;
+    }
+
+    .medical-badge {
+      font-size: 0.7rem;
+      background: #1a3a4a;
+      color: #8fc7e0;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
     }
 
     .subhead {
@@ -84,9 +106,78 @@
       font-size: 0.7rem;
     }
 
+    .badge-auth {
+      background: #e8f5e9;
+      color: #1e6b3b;
+      padding: 6px 14px;
+      border-radius: 60px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-auth i {
+      color: #2e7d4a;
+    }
+
+    .badge-status {
+      padding: 6px 14px;
+      border-radius: 60px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-status.idle {
+      background: #e8eaf6;
+      color: #3949ab;
+    }
+
+    .badge-status.idle i {
+      color: #5c6bc0;
+    }
+
+    .badge-status.reading {
+      background: #fff3e0;
+      color: #e65100;
+      animation: pulse-badge 1s infinite;
+    }
+
+    .badge-status.reading i {
+      color: #f57c00;
+    }
+
+    .badge-status.success {
+      background: #e8f5e9;
+      color: #1e6b3b;
+    }
+
+    .badge-status.success i {
+      color: #2e7d4a;
+    }
+
+    .badge-status.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .badge-status.error i {
+      color: #d32f2f;
+    }
+
+    @keyframes pulse-badge {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
       gap: 1.5rem;
       margin-top: 0.5rem;
     }
@@ -101,12 +192,76 @@
       border: 1px solid rgba(200, 220, 235, 0.4);
       backdrop-filter: blur(4px);
       background: rgba(255, 255, 255, 0.7);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: transparent;
+      transition: all 0.3s ease;
+    }
+
+    .metric-card.updating::before {
+      background: linear-gradient(90deg, #f39c12, #f1c40f, #f39c12);
+      animation: shimmer 1.5s infinite;
+    }
+
+    .metric-card.updated::before {
+      background: #27ae60;
+    }
+
+    .metric-card.failed::before {
+      background: #e74c3c;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
     }
 
     .metric-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 14px 28px rgba(0, 30, 50, 0.10);
       border-color: #b4d2e6;
+    }
+
+    .metric-card .update-indicator {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 0.65rem;
+      padding: 2px 10px;
+      border-radius: 40px;
+      background: #f5f5f5;
+      color: #999;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .metric-card .update-indicator.show {
+      opacity: 1;
+    }
+
+    .metric-card .update-indicator.success {
+      background: #e8f5e9;
+      color: #2e7d4a;
+    }
+
+    .metric-card .update-indicator.failed {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .metric-card .update-indicator.updating {
+      background: #fff3e0;
+      color: #e65100;
     }
 
     .metric-icon {
@@ -143,6 +298,15 @@
       gap: 4px;
     }
 
+    .metric-value .blink {
+      animation: blink-data 0.5s ease 3;
+    }
+
+    @keyframes blink-data {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
     .metric-unit {
       font-weight: 400;
       font-size: 1rem;
@@ -172,13 +336,86 @@
     .spo2 .metric-value { color: #1f6d8f; }
     .temp .metric-value { color: #c5752e; }
 
+    /* Button container at bottom */
+    .action-section {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(80, 130, 165, 0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .trigger-btn {
+      background: linear-gradient(135deg, #1a5276, #154360);
+      color: white;
+      border: none;
+      padding: 16px 40px;
+      border-radius: 60px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(26, 82, 118, 0.35);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .trigger-btn i {
+      font-size: 1.2rem;
+    }
+
+    .trigger-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(26, 82, 118, 0.45);
+      background: linear-gradient(135deg, #1a5f8a, #154360);
+    }
+
+    .trigger-btn:active {
+      transform: translateY(0px);
+    }
+
+    .trigger-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .trigger-btn.assessing {
+      background: linear-gradient(135deg, #f39c12, #d68910);
+      box-shadow: 0 4px 20px rgba(243, 156, 18, 0.4);
+      animation: pulse-btn 1.5s infinite;
+    }
+
+    @keyframes pulse-btn {
+      0% { box-shadow: 0 4px 20px rgba(243, 156, 18, 0.4); }
+      50% { box-shadow: 0 4px 35px rgba(243, 156, 18, 0.7); }
+      100% { box-shadow: 0 4px 20px rgba(243, 156, 18, 0.4); }
+    }
+
+    .trigger-btn.success {
+      background: linear-gradient(135deg, #27ae60, #1e8449);
+      box-shadow: 0 4px 20px rgba(39, 174, 96, 0.4);
+    }
+
+    .trigger-btn.error {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
+    }
+
     .footer-ref {
-      margin-top: 2.2rem;
+      margin-top: 1.5rem;
       font-size: 0.8rem;
       color: #44758d;
       text-align: center;
       border-top: 1px solid rgba(80, 130, 165, 0.15);
-      padding-top: 1.5rem;
+      padding-top: 1rem;
       display: flex;
       justify-content: center;
       gap: 16px;
@@ -188,6 +425,32 @@
     .footer-ref i {
       margin-right: 6px;
       opacity: 0.7;
+    }
+
+    .update-log {
+      margin-top: 0.8rem;
+      padding: 0.8rem 1.2rem;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 16px;
+      border: 1px solid rgba(200, 220, 235, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.85rem;
+      color: #2c5a70;
+    }
+
+    .update-log i {
+      font-size: 1rem;
+    }
+
+    .update-log .log-message {
+      flex: 1;
+    }
+
+    .update-log .log-time {
+      font-size: 0.7rem;
+      opacity: 0.6;
     }
 
     .loading-placeholder {
@@ -204,81 +467,238 @@
       display: block;
     }
 
-    @media (max-width: 480px) {
+    .auth-error {
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      border-radius: 16px;
+      padding: 1.5rem;
+      color: #b71c1c;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #1e3a5f;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.4s ease;
+      z-index: 1000;
+      max-width: 400px;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      background: #1e8449;
+    }
+
+    .toast.error {
+      background: #c0392b;
+    }
+
+    .toast.warning {
+      background: #d68910;
+    }
+
+    .toast i {
+      font-size: 1.2rem;
+    }
+
+    @media (max-width: 600px) {
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .trigger-btn {
+        justify-content: center;
+        padding: 14px 24px;
+        font-size: 0.9rem;
+        width: 100%;
+      }
       .dashboard { padding: 1.5rem; }
       .metric-value { font-size: 1.8rem; }
       .metrics-grid { gap: 1rem; }
+      .toast {
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+      }
+      .subhead {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .action-section {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
   <div class="dashboard" id="dashboard">
-    <h1>
-      <i class="fas fa-heartbeat" style="color:#1f6787;"></i> 
-      Health Metrics
-    </h1>
+    <div class="header">
+      <h1>
+        <i class="fas fa-heartbeat"></i> 
+        Patient Monitor
+        <span class="medical-badge">VITAL SIGNS</span>
+      </h1>
+    </div>
+
     <div class="subhead">
       <span><i class="fas fa-database"></i> Firebase Realtime · live</span>
-      <span class="badge-live"><i class="fas fa-circle" style="color:#0d8f4b;"></i> connected</span>
+      <span style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <span class="badge-auth"><i class="fas fa-lock"></i> authenticated</span>
+        <span class="badge-status idle" id="assessmentStatus">
+          <i class="fas fa-clock"></i> standby
+        </span>
+        <span class="badge-live"><i class="fas fa-circle" style="color:#0d8f4b;"></i> connected</span>
+      </span>
     </div>
 
     <!-- grid cards will be injected here -->
     <div id="metricsContainer" class="metrics-grid">
-      <!-- placeholder loading state (will be replaced) -->
       <div class="loading-placeholder" style="grid-column: 1 / -1;">
         <i class="fas fa-spinner fa-pulse"></i>
-        <span>Loading metrics from Firebase…</span>
+        <span>Loading patient data…</span>
       </div>
     </div>
 
+    <!-- Action Section - Button at bottom -->
+    <div class="action-section">
+      <button class="trigger-btn" id="triggerBtn">
+        <i class="fas fa-stethoscope"></i>
+        Initiate Assessment
+      </button>
+    </div>
+
+    <!-- Update log -->
+    <div class="update-log" id="updateLog">
+      <i class="fas fa-clipboard-list"></i>
+      <span class="log-message" id="logMessage">System ready. Awaiting assessment.</span>
+      <span class="log-time" id="logTime">—</span>
+    </div>
+
     <div class="footer-ref">
-      <span><i class="fas fa-microscope"></i> glucose · heartRate · spo2 · temperature</span>
-      <span><i class="far fa-clock"></i> <span id="lastUpdate">updating…</span></span>
+      <span><i class="fas fa-microscope"></i> Glucose · Heart Rate · SpO₂ · Temperature</span>
+      <span><i class="far fa-clock"></i> <span id="lastUpdate">waiting for data…</span></span>
     </div>
   </div>
 
-  <!-- Firebase SDKs (modular v9+) -->
+  <!-- Toast notification -->
+  <div class="toast" id="toast">
+    <i class="fas fa-info-circle"></i>
+    <span id="toastMessage">Notification</span>
+  </div>
+
+  <!-- Firebase SDKs -->
   <script type="importmap">
     {
       "imports": {
         "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-        "firebase/database": "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"
+        "firebase/database": "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
       }
     }
   </script>
 
   <script type="module">
-    // ----- import Firebase modular SDK -----
     import { initializeApp } from "firebase/app";
-    import { getDatabase, ref, onValue } from "firebase/database";
+    import { getDatabase, ref, onValue, set } from "firebase/database";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 
-    // Your Firebase configuration (exactly as provided)
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDGArdJHcFEgBQtW9VaBp7hNFwz1ShqOPA",
       authDomain: "heart-rate-data-b9ae3.firebaseapp.com",
+      databaseURL: "https://heart-rate-data-b9ae3-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "heart-rate-data-b9ae3",
       storageBucket: "heart-rate-data-b9ae3.firebasestorage.app",
       messagingSenderId: "6561907930",
       appId: "1:6561907930:web:7751c655034f6af0a451e3"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
-
-    // Reference to the path: health_metrics (as shown in the data snippet)
-    const metricsRef = ref(database, 'health_metrics');
+    const auth = getAuth(app);
 
     // DOM elements
     const container = document.getElementById('metricsContainer');
     const lastUpdateSpan = document.getElementById('lastUpdate');
+    const triggerBtn = document.getElementById('triggerBtn');
+    const assessmentStatus = document.getElementById('assessmentStatus');
+    const logMessage = document.getElementById('logMessage');
+    const logTime = document.getElementById('logTime');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
 
-    // ----- helper: build a metric card -----
-    function createMetricCard(iconClass, label, value, unit, statusText, cardClass) {
+    // ⚠️ REPLACE WITH YOUR ACTUAL CREDENTIALS
+    const EMAIL = "shreyahokrane399@gmail.com";
+    const PASSWORD = "shreya@1234";
+
+    let toastTimeout = null;
+    let currentData = null;
+    let isAssessing = false;
+    let previousValues = {};
+    let authSuccessLogged = false;
+
+    // ----- Toast notification -----
+    function showToast(message, type = 'info') {
+      toast.className = 'toast';
+      if (type === 'success') toast.classList.add('success');
+      else if (type === 'error') toast.classList.add('error');
+      else if (type === 'warning') toast.classList.add('warning');
+      
+      toastMessage.textContent = message;
+      toast.classList.add('show');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 5000);
+    }
+
+    // ----- Update log -----
+    function updateLog(message, isSuccess = null) {
+      logMessage.textContent = message;
+      const now = new Date();
+      logTime.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      const logContainer = document.getElementById('updateLog');
+      logContainer.style.borderLeft = isSuccess === true ? '4px solid #27ae60' : 
+                                     isSuccess === false ? '4px solid #e74c3c' : 
+                                     '4px solid #f39c12';
+    }
+
+    // ----- Update assessment status badge -----
+    function setAssessmentStatus(state, message) {
+      assessmentStatus.className = 'badge-status ' + state;
+      const iconMap = {
+        idle: 'fa-clock',
+        reading: 'fa-spinner fa-spin',
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle'
+      };
+      assessmentStatus.innerHTML = `<i class="fas ${iconMap[state] || 'fa-clock'}"></i> ${message}`;
+    }
+
+    // ----- Create metric card with update indicator -----
+    function createMetricCard(iconClass, label, value, unit, statusText, cardClass, metricKey) {
       const card = document.createElement('div');
       card.className = `metric-card ${cardClass || ''}`;
+      card.dataset.metric = metricKey;
       
-      // format value: if number, round to 2 decimals if float, else keep as is
       let displayValue = value;
       if (typeof value === 'number') {
         displayValue = Number.isInteger(value) ? value : value.toFixed(2);
@@ -287,9 +707,10 @@
       }
 
       card.innerHTML = `
+        <div class="update-indicator" id="indicator-${metricKey}">✓</div>
         <div class="metric-icon"><i class="${iconClass}"></i></div>
         <div class="metric-label">${label}</div>
-        <div class="metric-value">
+        <div class="metric-value" id="value-${metricKey}">
           ${displayValue}
           <span class="metric-unit">${unit || ''}</span>
         </div>
@@ -298,38 +719,85 @@
       return card;
     }
 
-    // ----- render data from firebase -----
+    // ----- Show update indicator on a card -----
+    function showUpdateIndicator(metricKey, status) {
+      const indicator = document.getElementById(`indicator-${metricKey}`);
+      const card = indicator?.closest('.metric-card');
+      if (!indicator || !card) return;
+
+      card.classList.remove('updating', 'updated', 'failed');
+      indicator.classList.remove('show', 'success', 'failed', 'updating');
+
+      if (status === 'updating') {
+        card.classList.add('updating');
+        indicator.classList.add('show', 'updating');
+        indicator.textContent = '⟳';
+      } else if (status === 'success') {
+        card.classList.add('updated');
+        indicator.classList.add('show', 'success');
+        indicator.textContent = '✓';
+        setTimeout(() => {
+          indicator.classList.remove('show');
+          card.classList.remove('updated');
+        }, 3000);
+      } else if (status === 'failed') {
+        card.classList.add('failed');
+        indicator.classList.add('show', 'failed');
+        indicator.textContent = '✗';
+        setTimeout(() => {
+          indicator.classList.remove('show');
+          card.classList.remove('failed');
+        }, 4000);
+      }
+    }
+
+    // ----- Render metrics with change detection -----
     function renderMetrics(data) {
-      // clear container (remove placeholder)
       container.innerHTML = '';
 
-      // if data is null or not an object, show fallback
       if (!data || typeof data !== 'object') {
         container.innerHTML = `<div class="loading-placeholder" style="grid-column:1/-1;">
           <i class="fas fa-exclamation-triangle"></i>
-          <span>No health metrics available</span>
+          <span>No patient data available</span>
         </div>`;
         return;
       }
 
-      // Extract values with fallback
       const glucose = data.glucose ?? '—';
       const heartRate = data.heartRate ?? '—';
       const spo2 = data.spo2 ?? '—';
       const temperature = data.temperature ?? '—';
 
-      // Build cards (in order)
+      // Detect changes
+      const changes = {};
+      if (previousValues.glucose !== undefined && previousValues.glucose !== glucose) {
+        changes.glucose = { old: previousValues.glucose, new: glucose };
+      }
+      if (previousValues.heartRate !== undefined && previousValues.heartRate !== heartRate) {
+        changes.heartRate = { old: previousValues.heartRate, new: heartRate };
+      }
+      if (previousValues.spo2 !== undefined && previousValues.spo2 !== spo2) {
+        changes.spo2 = { old: previousValues.spo2, new: spo2 };
+      }
+      if (previousValues.temperature !== undefined && previousValues.temperature !== temperature) {
+        changes.temperature = { old: previousValues.temperature, new: temperature };
+      }
+
+      previousValues = { glucose, heartRate, spo2, temperature };
+
       const cards = [];
 
       // Glucose
-      cards.push(createMetricCard(
+      const glucoseCard = createMetricCard(
         'fas fa-droplet',
         'Glucose',
         glucose,
         'mg/dL',
         glucose !== '—' ? (glucose < 100 ? 'Normal' : glucose < 140 ? 'Elevated' : 'High') : '—',
+        'glucose',
         'glucose'
-      ));
+      );
+      cards.push(glucoseCard);
 
       // Heart Rate
       let hrStatus = '—';
@@ -338,14 +806,16 @@
         else if (heartRate <= 100) hrStatus = 'Normal';
         else hrStatus = 'Tachycardia';
       }
-      cards.push(createMetricCard(
+      const heartCard = createMetricCard(
         'fas fa-heart',
         'Heart Rate',
         heartRate,
         'bpm',
         hrStatus,
-        'heart'
-      ));
+        'heart',
+        'heartRate'
+      );
+      cards.push(heartCard);
 
       // SpO2
       let spo2Status = '—';
@@ -354,14 +824,16 @@
         else if (spo2 >= 90) spo2Status = 'Acceptable';
         else spo2Status = 'Low';
       }
-      cards.push(createMetricCard(
+      const spo2Card = createMetricCard(
         'fas fa-lungs',
         'SpO₂',
         spo2,
         '%',
         spo2Status,
+        'spo2',
         'spo2'
-      ));
+      );
+      cards.push(spo2Card);
 
       // Temperature
       let tempStatus = '—';
@@ -373,44 +845,224 @@
           else tempStatus = 'Fever';
         }
       }
-      cards.push(createMetricCard(
+      const tempCard = createMetricCard(
         'fas fa-thermometer-half',
         'Temperature',
         temperature,
         '°C',
         tempStatus,
-        'temp'
-      ));
+        'temp',
+        'temperature'
+      );
+      cards.push(tempCard);
 
-      // Append all cards
       cards.forEach(card => container.appendChild(card));
 
-      // update timestamp
+      // Show update indicators for changed values
+      Object.keys(changes).forEach(key => {
+        showUpdateIndicator(key, 'success');
+        const valueEl = document.getElementById(`value-${key}`);
+        if (valueEl) {
+          valueEl.classList.remove('blink');
+          void valueEl.offsetWidth;
+          valueEl.classList.add('blink');
+        }
+      });
+
       const now = new Date();
       lastUpdateSpan.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      if (Object.keys(changes).length > 0) {
+        const changedKeys = Object.keys(changes).join(', ');
+        updateLog(`📊 ${changedKeys} updated`, true);
+      }
     }
 
-    // ----- listen to Firebase realtime updates -----
-    function initFirebaseListener() {
-      onValue(metricsRef, (snapshot) => {
-        const data = snapshot.val();
-        renderMetrics(data);
-      }, (error) => {
-        console.error('Firebase read error:', error);
-        container.innerHTML = `
-          <div class="loading-placeholder" style="grid-column:1/-1; color:#b34a4a;">
-            <i class="fas fa-exclamation-circle"></i>
-            <span>Error loading data. Check console.</span>
-          </div>`;
-        lastUpdateSpan.textContent = 'error';
+    // ----- Show auth error -----
+    function showAuthError(message) {
+      container.innerHTML = `
+        <div class="auth-error" style="grid-column:1/-1;">
+          <i class="fas fa-exclamation-circle" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
+          <strong>Authentication Error</strong>
+          <p style="margin-top:8px; font-size:0.95rem;">${message}</p>
+          <p style="margin-top:12px; font-size:0.85rem; opacity:0.8;">
+            Please check your credentials in the code.
+          </p>
+        </div>
+      `;
+      lastUpdateSpan.textContent = 'auth error';
+      updateLog('⚠️ Authentication failed', false);
+    }
+
+    // ----- Trigger hardware assessment -----
+    function triggerAssessment() {
+      if (isAssessing) return;
+      isAssessing = true;
+
+      triggerBtn.disabled = true;
+      triggerBtn.className = 'trigger-btn assessing';
+      triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assessing…';
+      setAssessmentStatus('reading', 'assessing vitals…');
+      updateLog('🔄 Initiating patient assessment…', null);
+
+      const triggerRef = ref(database, 'commands/readNow');
+      
+      set(triggerRef, {
+        timestamp: Date.now(),
+        status: 'pending',
+        requestedBy: 'dashboard',
+        type: 'full_assessment'
+      })
+      .then(() => {
+        showToast('📡 Assessment command sent to device', 'success');
+        updateLog('📡 Assessment command sent. Waiting for response…', null);
+        
+        let timeoutId = setTimeout(() => {
+          if (isAssessing) {
+            setAssessmentStatus('error', 'timeout - no response');
+            triggerBtn.className = 'trigger-btn error';
+            triggerBtn.innerHTML = '<i class="fas fa-times"></i> Timeout';
+            updateLog('⏱️ Assessment timed out', false);
+            showToast('⏱️ Assessment timeout - no response', 'error');
+            
+            setTimeout(() => {
+              resetTriggerButton();
+            }, 3000);
+          }
+        }, 15000);
+
+        triggerBtn._timeoutId = timeoutId;
+      })
+      .catch((error) => {
+        console.error('Trigger error:', error);
+        showToast('❌ Failed to send assessment command', 'error');
+        triggerBtn.className = 'trigger-btn error';
+        triggerBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
+        setAssessmentStatus('error', 'command failed');
+        updateLog('❌ Assessment command failed', false);
+        
+        setTimeout(() => {
+          resetTriggerButton();
+        }, 3000);
       });
     }
 
-    // start listening
-    initFirebaseListener();
+    // ----- Reset trigger button -----
+    function resetTriggerButton() {
+      isAssessing = false;
+      triggerBtn.disabled = false;
+      triggerBtn.className = 'trigger-btn';
+      triggerBtn.innerHTML = '<i class="fas fa-stethoscope"></i> Initiate Assessment';
+      if (assessmentStatus.classList.contains('reading') || 
+          assessmentStatus.classList.contains('error') || 
+          assessmentStatus.classList.contains('success')) {
+        setAssessmentStatus('idle', 'standby');
+      }
+      
+      if (triggerBtn._timeoutId) {
+        clearTimeout(triggerBtn._timeoutId);
+        triggerBtn._timeoutId = null;
+      }
+    }
 
-    // (optional) if you want to show "connecting..." briefly, but onValue will trigger
-    console.log('🔥 Firebase health dashboard listening...');
+    // ----- Listen to Firebase realtime updates -----
+    function startDataListener() {
+      const metricsRef = ref(database, 'health_metrics');
+      
+      onValue(metricsRef, (snapshot) => {
+        const data = snapshot.val();
+        currentData = data;
+        renderMetrics(data);
+        
+        if (data && data.trigger && data.trigger.status === 'completed') {
+          if (isAssessing) {
+            triggerBtn.className = 'trigger-btn success';
+            triggerBtn.innerHTML = '<i class="fas fa-check"></i> Assessment Complete';
+            setAssessmentStatus('success', 'vitals recorded');
+            updateLog('✅ Patient assessment completed', true);
+            showToast('✅ Vitals assessment completed successfully!', 'success');
+            
+            const triggerRef = ref(database, 'health_metrics/trigger');
+            set(triggerRef, null).catch(err => console.error('Error clearing trigger:', err));
+            
+            setTimeout(() => {
+              resetTriggerButton();
+            }, 3000);
+          }
+        } else if (data && data.trigger && data.trigger.status === 'failed') {
+          if (isAssessing) {
+            triggerBtn.className = 'trigger-btn error';
+            triggerBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Assessment Failed';
+            setAssessmentStatus('error', 'device error');
+            updateLog('❌ Device reported assessment failure', false);
+            showToast('❌ Device failed to complete assessment', 'error');
+            
+            const triggerRef = ref(database, 'health_metrics/trigger');
+            set(triggerRef, null).catch(err => console.error('Error clearing trigger:', err));
+            
+            setTimeout(() => {
+              resetTriggerButton();
+            }, 3000);
+          }
+        }
+      }, (error) => {
+        console.error('Firebase read error:', error);
+        if (error.code === 'PERMISSION_DENIED') {
+          showAuthError('Permission denied. Please verify your credentials.');
+        } else {
+          container.innerHTML = `
+            <div class="loading-placeholder" style="grid-column:1/-1; color:#b34a4a;">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>Error: ${error.message}</span>
+            </div>`;
+          lastUpdateSpan.textContent = 'error';
+          updateLog('⚠️ Database error: ' + error.message, false);
+        }
+      });
+    }
+
+    // ----- Authentication -----
+    function authenticateUser() {
+      container.innerHTML = `
+        <div class="loading-placeholder" style="grid-column: 1 / -1;">
+          <i class="fas fa-spinner fa-pulse"></i>
+          <span>Authenticating…</span>
+        </div>
+      `;
+
+      signInWithEmailAndPassword(auth, EMAIL, PASSWORD)
+        .then((userCredential) => {
+          console.log('✅ Authenticated:', userCredential.user.email);
+          startDataListener();
+          triggerBtn.disabled = false;
+          // Don't show auth success in log
+        })
+        .catch((error) => {
+          console.error('❌ Auth error:', error.code, error.message);
+          showAuthError(`Failed to authenticate: ${error.message}`);
+          triggerBtn.disabled = true;
+          updateLog('❌ Authentication failed', false);
+        });
+    }
+
+    // ----- Auth state observer -----
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('✅ Already authenticated:', user.email);
+        startDataListener();
+        triggerBtn.disabled = false;
+        // Don't show auth success in log
+      } else {
+        console.log('🔄 Attempting auto-login…');
+        authenticateUser();
+      }
+    });
+
+    // ----- Trigger button event listener -----
+    triggerBtn.addEventListener('click', triggerAssessment);
+
+    console.log('🏥 Patient Vital Signs Monitor ready');
+    updateLog('🏥 System ready. Awaiting assessment.', null);
   </script>
 </body>
 </html>
