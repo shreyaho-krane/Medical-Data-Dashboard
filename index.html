@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Health Metrics Dashboard</title>
+  <!-- Font Awesome Icons (free) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #f6f9fc 0%, #e9f2f9 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .dashboard {
+      max-width: 850px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 48px;
+      padding: 2rem 2rem 2.5rem;
+      box-shadow: 0 20px 40px rgba(0, 20, 40, 0.15), 0 6px 12px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: all 0.2s ease;
+    }
+
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      font-size: 1.9rem;
+      color: #0b2b3f;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.25rem;
+    }
+
+    .subhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #3a5e74;
+      font-weight: 400;
+      font-size: 0.95rem;
+      border-bottom: 1px solid rgba(60, 100, 130, 0.15);
+      padding-bottom: 0.75rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .subhead i {
+      margin-right: 6px;
+      color: #2b6c8c;
+    }
+
+    .badge-live {
+      background: #d1e7f5;
+      color: #065a7a;
+      padding: 6px 14px;
+      border-radius: 60px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-live i {
+      color: #0f7b9e;
+      font-size: 0.7rem;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .metric-card {
+      background: white;
+      padding: 1.5rem 0.8rem 1.2rem;
+      border-radius: 32px;
+      box-shadow: 0 6px 16px rgba(0, 20, 30, 0.06);
+      text-align: center;
+      transition: all 0.15s ease;
+      border: 1px solid rgba(200, 220, 235, 0.4);
+      backdrop-filter: blur(4px);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .metric-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 28px rgba(0, 30, 50, 0.10);
+      border-color: #b4d2e6;
+    }
+
+    .metric-icon {
+      font-size: 2.2rem;
+      margin-bottom: 0.4rem;
+      display: inline-block;
+      background: rgba(60, 130, 180, 0.08);
+      width: 60px;
+      height: 60px;
+      line-height: 60px;
+      border-radius: 30px;
+      color: #1b5e7a;
+    }
+
+    .metric-label {
+      font-weight: 500;
+      color: #1e4a62;
+      letter-spacing: 0.3px;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-top: 6px;
+    }
+
+    .metric-value {
+      font-weight: 700;
+      font-size: 2.2rem;
+      color: #052433;
+      line-height: 1.2;
+      margin-top: 4px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .metric-unit {
+      font-weight: 400;
+      font-size: 1rem;
+      color: #4f7991;
+      margin-left: 2px;
+    }
+
+    .metric-status {
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 40px;
+      display: inline-block;
+      margin-top: 10px;
+      background: #e7f0f7;
+      color: #1b5d7a;
+      font-weight: 500;
+    }
+
+    /* specific accents */
+    .glucose .metric-icon { color: #b45f3b; background: rgba(180, 95, 59, 0.10); }
+    .heart .metric-icon { color: #c0395a; background: rgba(192, 57, 90, 0.10); }
+    .spo2 .metric-icon { color: #2d7a9b; background: rgba(45, 122, 155, 0.10); }
+    .temp .metric-icon { color: #d9772b; background: rgba(217, 119, 43, 0.10); }
+
+    .glucose .metric-value { color: #9e5d3a; }
+    .heart .metric-value { color: #b13e5a; }
+    .spo2 .metric-value { color: #1f6d8f; }
+    .temp .metric-value { color: #c5752e; }
+
+    .footer-ref {
+      margin-top: 2.2rem;
+      font-size: 0.8rem;
+      color: #44758d;
+      text-align: center;
+      border-top: 1px solid rgba(80, 130, 165, 0.15);
+      padding-top: 1.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-ref i {
+      margin-right: 6px;
+      opacity: 0.7;
+    }
+
+    .loading-placeholder {
+      text-align: center;
+      padding: 3rem 0.5rem;
+      color: #1a4c66;
+      font-weight: 400;
+    }
+
+    .loading-placeholder i {
+      font-size: 2.4rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+      display: block;
+    }
+
+    @media (max-width: 480px) {
+      .dashboard { padding: 1.5rem; }
+      .metric-value { font-size: 1.8rem; }
+      .metrics-grid { gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard" id="dashboard">
+    <h1>
+      <i class="fas fa-heartbeat" style="color:#1f6787;"></i> 
+      Health Metrics
+    </h1>
+    <div class="subhead">
+      <span><i class="fas fa-database"></i> Firebase Realtime · live</span>
+      <span class="badge-live"><i class="fas fa-circle" style="color:#0d8f4b;"></i> connected</span>
+    </div>
+
+    <!-- grid cards will be injected here -->
+    <div id="metricsContainer" class="metrics-grid">
+      <!-- placeholder loading state (will be replaced) -->
+      <div class="loading-placeholder" style="grid-column: 1 / -1;">
+        <i class="fas fa-spinner fa-pulse"></i>
+        <span>Loading metrics from Firebase…</span>
+      </div>
+    </div>
+
+    <div class="footer-ref">
+      <span><i class="fas fa-microscope"></i> glucose · heartRate · spo2 · temperature</span>
+      <span><i class="far fa-clock"></i> <span id="lastUpdate">updating…</span></span>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs (modular v9+) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+        "firebase/database": "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    // ----- import Firebase modular SDK -----
+    import { initializeApp } from "firebase/app";
+    import { getDatabase, ref, onValue } from "firebase/database";
+
+    // Your Firebase configuration (exactly as provided)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDGArdJHcFEgBQtW9VaBp7hNFwz1ShqOPA",
+      authDomain: "heart-rate-data-b9ae3.firebaseapp.com",
+      projectId: "heart-rate-data-b9ae3",
+      storageBucket: "heart-rate-data-b9ae3.firebasestorage.app",
+      messagingSenderId: "6561907930",
+      appId: "1:6561907930:web:7751c655034f6af0a451e3"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Reference to the path: health_metrics (as shown in the data snippet)
+    const metricsRef = ref(database, 'health_metrics');
+
+    // DOM elements
+    const container = document.getElementById('metricsContainer');
+    const lastUpdateSpan = document.getElementById('lastUpdate');
+
+    // ----- helper: build a metric card -----
+    function createMetricCard(iconClass, label, value, unit, statusText, cardClass) {
+      const card = document.createElement('div');
+      card.className = `metric-card ${cardClass || ''}`;
+      
+      // format value: if number, round to 2 decimals if float, else keep as is
+      let displayValue = value;
+      if (typeof value === 'number') {
+        displayValue = Number.isInteger(value) ? value : value.toFixed(2);
+      } else if (value === undefined || value === null) {
+        displayValue = '—';
+      }
+
+      card.innerHTML = `
+        <div class="metric-icon"><i class="${iconClass}"></i></div>
+        <div class="metric-label">${label}</div>
+        <div class="metric-value">
+          ${displayValue}
+          <span class="metric-unit">${unit || ''}</span>
+        </div>
+        <div class="metric-status">${statusText || ''}</div>
+      `;
+      return card;
+    }
+
+    // ----- render data from firebase -----
+    function renderMetrics(data) {
+      // clear container (remove placeholder)
+      container.innerHTML = '';
+
+      // if data is null or not an object, show fallback
+      if (!data || typeof data !== 'object') {
+        container.innerHTML = `<div class="loading-placeholder" style="grid-column:1/-1;">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>No health metrics available</span>
+        </div>`;
+        return;
+      }
+
+      // Extract values with fallback
+      const glucose = data.glucose ?? '—';
+      const heartRate = data.heartRate ?? '—';
+      const spo2 = data.spo2 ?? '—';
+      const temperature = data.temperature ?? '—';
+
+      // Build cards (in order)
+      const cards = [];
+
+      // Glucose
+      cards.push(createMetricCard(
+        'fas fa-droplet',
+        'Glucose',
+        glucose,
+        'mg/dL',
+        glucose !== '—' ? (glucose < 100 ? 'Normal' : glucose < 140 ? 'Elevated' : 'High') : '—',
+        'glucose'
+      ));
+
+      // Heart Rate
+      let hrStatus = '—';
+      if (heartRate !== '—') {
+        if (heartRate < 60) hrStatus = 'Bradycardia';
+        else if (heartRate <= 100) hrStatus = 'Normal';
+        else hrStatus = 'Tachycardia';
+      }
+      cards.push(createMetricCard(
+        'fas fa-heart',
+        'Heart Rate',
+        heartRate,
+        'bpm',
+        hrStatus,
+        'heart'
+      ));
+
+      // SpO2
+      let spo2Status = '—';
+      if (spo2 !== '—') {
+        if (spo2 >= 95) spo2Status = 'Optimal';
+        else if (spo2 >= 90) spo2Status = 'Acceptable';
+        else spo2Status = 'Low';
+      }
+      cards.push(createMetricCard(
+        'fas fa-lungs',
+        'SpO₂',
+        spo2,
+        '%',
+        spo2Status,
+        'spo2'
+      ));
+
+      // Temperature
+      let tempStatus = '—';
+      if (temperature !== '—') {
+        const t = Number(temperature);
+        if (!isNaN(t)) {
+          if (t < 36.0) tempStatus = 'Low';
+          else if (t <= 37.5) tempStatus = 'Normal';
+          else tempStatus = 'Fever';
+        }
+      }
+      cards.push(createMetricCard(
+        'fas fa-thermometer-half',
+        'Temperature',
+        temperature,
+        '°C',
+        tempStatus,
+        'temp'
+      ));
+
+      // Append all cards
+      cards.forEach(card => container.appendChild(card));
+
+      // update timestamp
+      const now = new Date();
+      lastUpdateSpan.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // ----- listen to Firebase realtime updates -----
+    function initFirebaseListener() {
+      onValue(metricsRef, (snapshot) => {
+        const data = snapshot.val();
+        renderMetrics(data);
+      }, (error) => {
+        console.error('Firebase read error:', error);
+        container.innerHTML = `
+          <div class="loading-placeholder" style="grid-column:1/-1; color:#b34a4a;">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Error loading data. Check console.</span>
+          </div>`;
+        lastUpdateSpan.textContent = 'error';
+      });
+    }
+
+    // start listening
+    initFirebaseListener();
+
+    // (optional) if you want to show "connecting..." briefly, but onValue will trigger
+    console.log('🔥 Firebase health dashboard listening...');
+  </script>
+</body>
+</html>
