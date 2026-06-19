@@ -169,6 +169,15 @@
       color: #d32f2f;
     }
 
+    .badge-status.warning {
+      background: #fff8e1;
+      color: #e65100;
+    }
+
+    .badge-status.warning i {
+      color: #f57c00;
+    }
+
     @keyframes pulse-badge {
       0% { opacity: 1; }
       50% { opacity: 0.6; }
@@ -336,7 +345,7 @@
     .spo2 .metric-value { color: #1f6d8f; }
     .temp .metric-value { color: #c5752e; }
 
-    /* Button container at bottom */
+    /* Action Section */
     .action-section {
       margin-top: 2rem;
       padding-top: 1.5rem;
@@ -409,6 +418,11 @@
       box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
     }
 
+    .trigger-btn.warning {
+      background: linear-gradient(135deg, #f39c12, #e67e22);
+      box-shadow: 0 4px 20px rgba(243, 156, 18, 0.4);
+    }
+
     .footer-ref {
       margin-top: 1.5rem;
       font-size: 0.8rem;
@@ -438,6 +452,7 @@
       gap: 12px;
       font-size: 0.85rem;
       color: #2c5a70;
+      min-height: 50px;
     }
 
     .update-log i {
@@ -451,6 +466,21 @@
     .update-log .log-time {
       font-size: 0.7rem;
       opacity: 0.6;
+    }
+
+    .update-log.error {
+      border-left: 4px solid #e74c3c;
+      background: rgba(231, 76, 60, 0.05);
+    }
+
+    .update-log.warning {
+      border-left: 4px solid #f39c12;
+      background: rgba(243, 156, 18, 0.05);
+    }
+
+    .update-log.success {
+      border-left: 4px solid #27ae60;
+      background: rgba(39, 174, 96, 0.05);
     }
 
     .loading-placeholder {
@@ -474,6 +504,83 @@
       padding: 1.5rem;
       color: #b71c1c;
       text-align: center;
+    }
+
+    /* Error Modal / Banner */
+    .error-banner {
+      background: #fff3e0;
+      border: 2px solid #ff9800;
+      border-radius: 16px;
+      padding: 1.2rem 1.5rem;
+      margin: 1rem 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      animation: slideDown 0.5s ease;
+    }
+
+    .error-banner.error {
+      border-color: #e74c3c;
+      background: #ffebee;
+    }
+
+    .error-banner.warning {
+      border-color: #f39c12;
+      background: #fff8e1;
+    }
+
+    .error-banner.success {
+      border-color: #27ae60;
+      background: #e8f5e9;
+    }
+
+    .error-banner i {
+      font-size: 2rem;
+      color: #e65100;
+    }
+
+    .error-banner.error i {
+      color: #c62828;
+    }
+
+    .error-banner.warning i {
+      color: #e65100;
+    }
+
+    .error-banner.success i {
+      color: #2e7d4a;
+    }
+
+    .error-banner .error-content {
+      flex: 1;
+    }
+
+    .error-banner .error-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #1a1a1a;
+    }
+
+    .error-banner .error-details {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 2px;
+    }
+
+    .error-banner .error-time {
+      font-size: 0.7rem;
+      color: #888;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .toast {
@@ -543,6 +650,10 @@
       .action-section {
         flex-direction: column;
       }
+      .error-banner {
+        flex-direction: column;
+        text-align: center;
+      }
     }
   </style>
 </head>
@@ -567,7 +678,10 @@
       </span>
     </div>
 
-    <!-- grid cards will be injected here -->
+    <!-- Error Banner -->
+    <div id="errorBanner" style="display: none;"></div>
+
+    <!-- Metrics Grid -->
     <div id="metricsContainer" class="metrics-grid">
       <div class="loading-placeholder" style="grid-column: 1 / -1;">
         <i class="fas fa-spinner fa-pulse"></i>
@@ -575,7 +689,7 @@
       </div>
     </div>
 
-    <!-- Action Section - Button at bottom -->
+    <!-- Action Section -->
     <div class="action-section">
       <button class="trigger-btn" id="triggerBtn">
         <i class="fas fa-stethoscope"></i>
@@ -615,7 +729,7 @@
 
   <script type="module">
     import { initializeApp } from "firebase/app";
-    import { getDatabase, ref, onValue, set } from "firebase/database";
+    import { getDatabase, ref, onValue, set, update } from "firebase/database";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 
     // Firebase configuration
@@ -640,6 +754,8 @@
     const assessmentStatus = document.getElementById('assessmentStatus');
     const logMessage = document.getElementById('logMessage');
     const logTime = document.getElementById('logTime');
+    const logContainer = document.getElementById('updateLog');
+    const errorBanner = document.getElementById('errorBanner');
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toastMessage');
 
@@ -648,10 +764,9 @@
     const PASSWORD = "shreya@1234";
 
     let toastTimeout = null;
-    let currentData = null;
     let isAssessing = false;
     let previousValues = {};
-    let authSuccessLogged = false;
+    let errorBannerTimeout = null;
 
     // ----- Toast notification -----
     function showToast(message, type = 'info') {
@@ -670,15 +785,16 @@
     }
 
     // ----- Update log -----
-    function updateLog(message, isSuccess = null) {
+    function updateLog(message, type = null) {
       logMessage.textContent = message;
       const now = new Date();
       logTime.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       
-      const logContainer = document.getElementById('updateLog');
-      logContainer.style.borderLeft = isSuccess === true ? '4px solid #27ae60' : 
-                                     isSuccess === false ? '4px solid #e74c3c' : 
-                                     '4px solid #f39c12';
+      // Reset classes
+      logContainer.className = 'update-log';
+      if (type === 'success') logContainer.classList.add('success');
+      else if (type === 'error') logContainer.classList.add('error');
+      else if (type === 'warning') logContainer.classList.add('warning');
     }
 
     // ----- Update assessment status badge -----
@@ -688,12 +804,55 @@
         idle: 'fa-clock',
         reading: 'fa-spinner fa-spin',
         success: 'fa-check-circle',
-        error: 'fa-exclamation-circle'
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle'
       };
       assessmentStatus.innerHTML = `<i class="fas ${iconMap[state] || 'fa-clock'}"></i> ${message}`;
     }
 
-    // ----- Create metric card with update indicator -----
+    // ----- Show error banner -----
+    function showErrorBanner(title, details, type = 'error') {
+      // Clear any existing timeout
+      if (errorBannerTimeout) {
+        clearTimeout(errorBannerTimeout);
+        errorBannerTimeout = null;
+      }
+
+      const iconMap = {
+        error: 'fa-times-circle',
+        warning: 'fa-exclamation-triangle',
+        success: 'fa-check-circle'
+      };
+
+      errorBanner.className = `error-banner ${type}`;
+      errorBanner.style.display = 'flex';
+      errorBanner.innerHTML = `
+        <i class="fas ${iconMap[type] || 'fa-info-circle'}"></i>
+        <div class="error-content">
+          <div class="error-title">${title}</div>
+          <div class="error-details">${details}</div>
+        </div>
+        <span class="error-time">${new Date().toLocaleTimeString()}</span>
+      `;
+
+      // Auto-hide after 10 seconds for warnings, 15 for errors
+      const timeout = type === 'warning' ? 10000 : 15000;
+      errorBannerTimeout = setTimeout(() => {
+        errorBanner.style.display = 'none';
+        errorBannerTimeout = null;
+      }, timeout);
+    }
+
+    // ----- Hide error banner -----
+    function hideErrorBanner() {
+      errorBanner.style.display = 'none';
+      if (errorBannerTimeout) {
+        clearTimeout(errorBannerTimeout);
+        errorBannerTimeout = null;
+      }
+    }
+
+    // ----- Create metric card -----
     function createMetricCard(iconClass, label, value, unit, statusText, cardClass, metricKey) {
       const card = document.createElement('div');
       card.className = `metric-card ${cardClass || ''}`;
@@ -719,7 +878,7 @@
       return card;
     }
 
-    // ----- Show update indicator on a card -----
+    // ----- Show update indicator -----
     function showUpdateIndicator(metricKey, status) {
       const indicator = document.getElementById(`indicator-${metricKey}`);
       const card = indicator?.closest('.metric-card');
@@ -751,7 +910,7 @@
       }
     }
 
-    // ----- Render metrics with change detection -----
+    // ----- Render metrics -----
     function renderMetrics(data) {
       container.innerHTML = '';
 
@@ -768,7 +927,6 @@
       const spo2 = data.spo2 ?? '—';
       const temperature = data.temperature ?? '—';
 
-      // Detect changes
       const changes = {};
       if (previousValues.glucose !== undefined && previousValues.glucose !== glucose) {
         changes.glucose = { old: previousValues.glucose, new: glucose };
@@ -788,7 +946,7 @@
       const cards = [];
 
       // Glucose
-      const glucoseCard = createMetricCard(
+      cards.push(createMetricCard(
         'fas fa-droplet',
         'Glucose',
         glucose,
@@ -796,8 +954,7 @@
         glucose !== '—' ? (glucose < 100 ? 'Normal' : glucose < 140 ? 'Elevated' : 'High') : '—',
         'glucose',
         'glucose'
-      );
-      cards.push(glucoseCard);
+      ));
 
       // Heart Rate
       let hrStatus = '—';
@@ -806,7 +963,7 @@
         else if (heartRate <= 100) hrStatus = 'Normal';
         else hrStatus = 'Tachycardia';
       }
-      const heartCard = createMetricCard(
+      cards.push(createMetricCard(
         'fas fa-heart',
         'Heart Rate',
         heartRate,
@@ -814,8 +971,7 @@
         hrStatus,
         'heart',
         'heartRate'
-      );
-      cards.push(heartCard);
+      ));
 
       // SpO2
       let spo2Status = '—';
@@ -824,7 +980,7 @@
         else if (spo2 >= 90) spo2Status = 'Acceptable';
         else spo2Status = 'Low';
       }
-      const spo2Card = createMetricCard(
+      cards.push(createMetricCard(
         'fas fa-lungs',
         'SpO₂',
         spo2,
@@ -832,8 +988,7 @@
         spo2Status,
         'spo2',
         'spo2'
-      );
-      cards.push(spo2Card);
+      ));
 
       // Temperature
       let tempStatus = '—';
@@ -845,7 +1000,7 @@
           else tempStatus = 'Fever';
         }
       }
-      const tempCard = createMetricCard(
+      cards.push(createMetricCard(
         'fas fa-thermometer-half',
         'Temperature',
         temperature,
@@ -853,12 +1008,10 @@
         tempStatus,
         'temp',
         'temperature'
-      );
-      cards.push(tempCard);
+      ));
 
       cards.forEach(card => container.appendChild(card));
 
-      // Show update indicators for changed values
       Object.keys(changes).forEach(key => {
         showUpdateIndicator(key, 'success');
         const valueEl = document.getElementById(`value-${key}`);
@@ -874,7 +1027,7 @@
       
       if (Object.keys(changes).length > 0) {
         const changedKeys = Object.keys(changes).join(', ');
-        updateLog(`📊 ${changedKeys} updated`, true);
+        updateLog(`📊 ${changedKeys} updated`, 'success');
       }
     }
 
@@ -885,19 +1038,76 @@
           <i class="fas fa-exclamation-circle" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
           <strong>Authentication Error</strong>
           <p style="margin-top:8px; font-size:0.95rem;">${message}</p>
-          <p style="margin-top:12px; font-size:0.85rem; opacity:0.8;">
-            Please check your credentials in the code.
-          </p>
         </div>
       `;
       lastUpdateSpan.textContent = 'auth error';
-      updateLog('⚠️ Authentication failed', false);
+      updateLog('⚠️ Authentication failed', 'error');
     }
 
-    // ----- Trigger hardware assessment -----
+    // ----- Parse error message from hardware -----
+    function parseHardwareError(status, errorMessage) {
+      const errorMap = {
+        'Finger NOT THERE': {
+          title: '🖐️ Finger Not Detected',
+          details: 'Please place your finger on the sensor and try again.',
+          type: 'warning'
+        },
+        'Finger Removed': {
+          title: '🖐️ Finger Removed',
+          details: 'Finger was removed during measurement. Please keep finger steady on the sensor.',
+          type: 'warning'
+        },
+        'No Finger': {
+          title: '🖐️ No Finger Detected',
+          details: 'Please place your finger on the sensor properly.',
+          type: 'warning'
+        },
+        'Sensor Error': {
+          title: '⚠️ Sensor Error',
+          details: 'There was an issue with the sensor. Please check the connection.',
+          type: 'error'
+        },
+        'Timeout': {
+          title: '⏱️ Measurement Timeout',
+          details: 'The measurement took too long. Please try again.',
+          type: 'error'
+        },
+        'Low Signal': {
+          title: '📶 Low Signal',
+          details: 'The signal from the sensor is too weak. Please ensure proper contact.',
+          type: 'warning'
+        }
+      };
+
+      // Check if the error message matches any known patterns
+      let matchedError = null;
+      for (const [key, value] of Object.entries(errorMap)) {
+        if (status?.toLowerCase().includes(key.toLowerCase()) || 
+            errorMessage?.toLowerCase().includes(key.toLowerCase())) {
+          matchedError = value;
+          break;
+        }
+      }
+
+      // If no match, create a generic error
+      if (!matchedError) {
+        matchedError = {
+          title: '❌ Assessment Failed',
+          details: errorMessage || status || 'Unknown error occurred during assessment.',
+          type: 'error'
+        };
+      }
+
+      return matchedError;
+    }
+
+    // ----- Trigger assessment -----
     function triggerAssessment() {
       if (isAssessing) return;
       isAssessing = true;
+
+      // Hide any existing error banner
+      hideErrorBanner();
 
       triggerBtn.disabled = true;
       triggerBtn.className = 'trigger-btn assessing';
@@ -917,19 +1127,25 @@
         showToast('📡 Assessment command sent to device', 'success');
         updateLog('📡 Assessment command sent. Waiting for response…', null);
         
+        // Timeout after 20 seconds
         let timeoutId = setTimeout(() => {
           if (isAssessing) {
             setAssessmentStatus('error', 'timeout - no response');
             triggerBtn.className = 'trigger-btn error';
             triggerBtn.innerHTML = '<i class="fas fa-times"></i> Timeout';
-            updateLog('⏱️ Assessment timed out', false);
+            updateLog('⏱️ Assessment timed out', 'error');
             showToast('⏱️ Assessment timeout - no response', 'error');
+            showErrorBanner(
+              '⏱️ Assessment Timeout',
+              'The device did not respond within the expected time. Please check the connection and try again.',
+              'error'
+            );
             
             setTimeout(() => {
               resetTriggerButton();
             }, 3000);
           }
-        }, 15000);
+        }, 20000);
 
         triggerBtn._timeoutId = timeoutId;
       })
@@ -939,7 +1155,12 @@
         triggerBtn.className = 'trigger-btn error';
         triggerBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
         setAssessmentStatus('error', 'command failed');
-        updateLog('❌ Assessment command failed', false);
+        updateLog('❌ Assessment command failed', 'error');
+        showErrorBanner(
+          '❌ Command Failed',
+          'Failed to send assessment command to the device. Please try again.',
+          'error'
+        );
         
         setTimeout(() => {
           resetTriggerButton();
@@ -955,7 +1176,8 @@
       triggerBtn.innerHTML = '<i class="fas fa-stethoscope"></i> Initiate Assessment';
       if (assessmentStatus.classList.contains('reading') || 
           assessmentStatus.classList.contains('error') || 
-          assessmentStatus.classList.contains('success')) {
+          assessmentStatus.classList.contains('success') ||
+          assessmentStatus.classList.contains('warning')) {
         setAssessmentStatus('idle', 'standby');
       }
       
@@ -968,10 +1190,39 @@
     // ----- Listen to Firebase realtime updates -----
     function startDataListener() {
       const metricsRef = ref(database, 'health_metrics');
+      const commandsRef = ref(database, 'commands/readNow');
       
+      // Listen for command status changes (for error handling)
+      onValue(commandsRef, (snapshot) => {
+        const command = snapshot.val();
+        if (command && command.status === 'error' && isAssessing) {
+          // Hardware reported an error
+          const errorMessage = command.message || command.error || 'Unknown error';
+          const parsedError = parseHardwareError(command.status, errorMessage);
+          
+          triggerBtn.className = `trigger-btn ${parsedError.type}`;
+          triggerBtn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${parsedError.title}`;
+          setAssessmentStatus(parsedError.type, parsedError.title.toLowerCase());
+          updateLog(`❌ ${parsedError.title}: ${parsedError.details}`, parsedError.type);
+          showToast(`❌ ${parsedError.title}`, parsedError.type);
+          showErrorBanner(parsedError.title, parsedError.details, parsedError.type);
+          
+          // Clear the error command after displaying
+          setTimeout(() => {
+            set(commandsRef, null).catch(err => console.error('Error clearing command:', err));
+          }, 1000);
+          
+          setTimeout(() => {
+            resetTriggerButton();
+          }, 5000);
+        }
+      }, (error) => {
+        console.error('Command listener error:', error);
+      });
+
+      // Listen for health metrics updates
       onValue(metricsRef, (snapshot) => {
         const data = snapshot.val();
-        currentData = data;
         renderMetrics(data);
         
         if (data && data.trigger && data.trigger.status === 'completed') {
@@ -979,8 +1230,13 @@
             triggerBtn.className = 'trigger-btn success';
             triggerBtn.innerHTML = '<i class="fas fa-check"></i> Assessment Complete';
             setAssessmentStatus('success', 'vitals recorded');
-            updateLog('✅ Patient assessment completed', true);
+            updateLog('✅ Patient assessment completed successfully', 'success');
             showToast('✅ Vitals assessment completed successfully!', 'success');
+            showErrorBanner(
+              '✅ Assessment Complete',
+              'All vital signs have been successfully recorded.',
+              'success'
+            );
             
             const triggerRef = ref(database, 'health_metrics/trigger');
             set(triggerRef, null).catch(err => console.error('Error clearing trigger:', err));
@@ -991,18 +1247,22 @@
           }
         } else if (data && data.trigger && data.trigger.status === 'failed') {
           if (isAssessing) {
-            triggerBtn.className = 'trigger-btn error';
-            triggerBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Assessment Failed';
-            setAssessmentStatus('error', 'device error');
-            updateLog('❌ Device reported assessment failure', false);
-            showToast('❌ Device failed to complete assessment', 'error');
+            const errorMsg = data.trigger.message || 'Device reported failure';
+            const parsedError = parseHardwareError('Sensor Error', errorMsg);
+            
+            triggerBtn.className = `trigger-btn ${parsedError.type}`;
+            triggerBtn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Failed`;
+            setAssessmentStatus(parsedError.type, parsedError.title.toLowerCase());
+            updateLog(`❌ ${parsedError.title}: ${parsedError.details}`, parsedError.type);
+            showToast(`❌ ${parsedError.title}`, parsedError.type);
+            showErrorBanner(parsedError.title, parsedError.details, parsedError.type);
             
             const triggerRef = ref(database, 'health_metrics/trigger');
             set(triggerRef, null).catch(err => console.error('Error clearing trigger:', err));
             
             setTimeout(() => {
               resetTriggerButton();
-            }, 3000);
+            }, 5000);
           }
         }
       }, (error) => {
@@ -1016,7 +1276,7 @@
               <span>Error: ${error.message}</span>
             </div>`;
           lastUpdateSpan.textContent = 'error';
-          updateLog('⚠️ Database error: ' + error.message, false);
+          updateLog('⚠️ Database error: ' + error.message, 'error');
         }
       });
     }
@@ -1035,13 +1295,12 @@
           console.log('✅ Authenticated:', userCredential.user.email);
           startDataListener();
           triggerBtn.disabled = false;
-          // Don't show auth success in log
         })
         .catch((error) => {
           console.error('❌ Auth error:', error.code, error.message);
           showAuthError(`Failed to authenticate: ${error.message}`);
           triggerBtn.disabled = true;
-          updateLog('❌ Authentication failed', false);
+          updateLog('❌ Authentication failed', 'error');
         });
     }
 
@@ -1051,7 +1310,6 @@
         console.log('✅ Already authenticated:', user.email);
         startDataListener();
         triggerBtn.disabled = false;
-        // Don't show auth success in log
       } else {
         console.log('🔄 Attempting auto-login…');
         authenticateUser();
